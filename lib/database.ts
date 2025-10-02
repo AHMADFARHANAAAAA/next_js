@@ -23,7 +23,7 @@ let pool: Pool;
 if (process.env.NODE_ENV === 'production') {
   pool = new Pool({
     connectionString: DATABASE_URL,
-    ssl: DATABASE_URL.includes('sslmode=disable') ? false : {
+    ssl: {
       rejectUnauthorized: false
     }
   });
@@ -31,7 +31,6 @@ if (process.env.NODE_ENV === 'production') {
   if (!global.postgres) {
     global.postgres = new Pool({
       connectionString: DATABASE_URL,
-      ssl: DATABASE_URL.includes('sslmode=disable') ? false : undefined
     });
   }
   pool = global.postgres;

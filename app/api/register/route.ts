@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import dbConnect from '@/lib/database';
-import User from '@/models/User';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
-
     const { name, email, password } = await request.json();
 
     // Validation
@@ -27,8 +26,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const emailExists = await User.emailExists(email);
-    if (emailExists) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+    
+    if (existingUser) {
       return NextResponse.json(
         { success: false, message: 'User already exists with this email' },
         { status: 409 }
@@ -36,13 +38,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password
-    const hashedPassword = await User.hashPassword(password);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword
+      }
     });
 
     // Generate JWT token
@@ -67,22 +71,22 @@ export async function POST(request: NextRequest) {
       token
     }, { status: 201 });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Registration error:', error);
 
-    // Handle duplicate email error
-    if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === '23505') {
+    // Handle Prisma unique constraint error
+    if (error.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'Email already exists' },
         { status: 409 }
       );
     }
 
-    // Handle validation errors
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { success: false, message: errorMessage },
+      { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

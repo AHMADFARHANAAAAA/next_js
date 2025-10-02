@@ -1,14 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 
 interface User {
-  id: number;
-  name: string;
+  id: string;
+  name: string | null;
   email: string;
+  image: string | null;
   created_at: string;
   updated_at: string;
+  accounts?: Array<{
+    provider: string;
+  }>;
 }
 
 interface UsersResponse {
@@ -19,15 +24,11 @@ interface UsersResponse {
 }
 
 export default function AdminPage() {
+  const { data: session, status } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
-
-  useEffect(() => {
-    checkDbConnection();
-    fetchUsers();
-  }, []);
 
   const checkDbConnection = async () => {
     try {
@@ -39,7 +40,7 @@ export default function AdminPage() {
       } else {
         setDbStatus('error');
       }
-    } catch {
+    } catch (error) {
       setDbStatus('error');
     }
   };
@@ -55,7 +56,7 @@ export default function AdminPage() {
       } else {
         setError(data.message || 'Failed to fetch users');
       }
-    } catch {
+    } catch (error) {
       setError('Network error while fetching users');
     } finally {
       setLoading(false);
@@ -72,16 +73,85 @@ export default function AdminPage() {
     });
   };
 
+  useEffect(() => {
+    // Always load data, regardless of session
+    checkDbConnection();
+    fetchUsers();
+  }, []);
+
+  // Show loading state while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {/* Header with user info */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">Manage registered users</p>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <div className="mt-2 flex items-center">
+                {session?.user?.image && (
+                  <img 
+                    src={session.user.image} 
+                    alt="Profile" 
+                    className="w-8 h-8 rounded-full mr-3"
+                  />
+                )}
+                <p className="text-gray-600">
+                  {session?.user ? (
+                    <>
+                      Welcome, {session.user.name || session.user.email}
+                      <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        Facebook Login
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Admin Dashboard - Testing Mode
+                      <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                        No Authentication
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              {session ? (
+                <button
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </div>
           
           {/* Navigation */}
-          <div className="mt-4 flex space-x-4">
+          <div className="flex space-x-4">
             <Link 
               href="/register" 
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
@@ -202,16 +272,29 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                              <span className="text-white font-medium">
-                                {user.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
+                            {user.image ? (
+                              <img 
+                                src={user.image} 
+                                alt="Profile" 
+                                className="h-10 w-10 rounded-full"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                <span className="text-white font-medium">
+                                  {(user.name || user.email).charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
-                              {user.name}
+                              {user.name || 'Facebook User'}
                             </div>
+                            {user.accounts && user.accounts.length > 0 && (
+                              <div className="text-xs text-gray-500">
+                                via {user.accounts[0].provider}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -237,7 +320,7 @@ export default function AdminPage() {
           <h3 className="text-lg font-semibold text-blue-900 mb-2">How to Test</h3>
           <ol className="list-decimal list-inside space-y-1 text-blue-800">
             <li>Make sure PostgreSQL is connected (green status above)</li>
-            <li>Click &quot;Register New User&quot; to create a test account</li>
+            <li>Click "Register New User" to create a test account</li>
             <li>Fill the registration form and submit</li>
             <li>Return to this page to see the new user in the table</li>
             <li>Test login with the registered credentials</li>

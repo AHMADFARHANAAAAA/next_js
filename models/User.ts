@@ -136,67 +136,36 @@ class User {
 
   // Create tables (for setup)
   static async createTable(): Promise<void> {
+    const query = `
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL CHECK (length(name) >= 2 AND length(name) <= 50),
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL CHECK (length(password) >= 6),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+      CREATE OR REPLACE FUNCTION update_updated_at_column()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          NEW.updated_at = CURRENT_TIMESTAMP;
+          RETURN NEW;
+      END;
+      $$ language 'plpgsql';
+
+      CREATE TRIGGER update_users_updated_at 
+      BEFORE UPDATE ON users 
+      FOR EACH ROW 
+      EXECUTE FUNCTION update_updated_at_column();
+    `;
+
     const client = await pool.connect();
     try {
-      // Create table first
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          password VARCHAR(255) NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-
-      // Create index
-      await client.query(`
-        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
-      `);
-
-      // Check if trigger function exists, if not create it
-      const functionExists = await client.query(`
-        SELECT EXISTS (
-          SELECT 1 FROM pg_proc WHERE proname = 'update_updated_at_column'
-        )
-      `);
-
-      if (!functionExists.rows[0].exists) {
-        await client.query(`
-          CREATE FUNCTION update_updated_at_column()
-          RETURNS TRIGGER AS $$
-          BEGIN
-              NEW.updated_at = CURRENT_TIMESTAMP;
-              RETURN NEW;
-          END;
-          $$ LANGUAGE plpgsql;
-        `);
-      }
-
-      // Check if trigger exists, if not create it
-      const triggerExists = await client.query(`
-        SELECT EXISTS (
-          SELECT 1 FROM pg_trigger WHERE tgname = 'update_users_updated_at'
-        )
-      `);
-
-      if (!triggerExists.rows[0].exists) {
-        await client.query(`
-          CREATE TRIGGER update_users_updated_at 
-          BEFORE UPDATE ON users 
-          FOR EACH ROW 
-          EXECUTE FUNCTION update_updated_at_column()
-        `);
-      }
-
-      console.log('Users table and triggers created successfully');
-    } catch (error: any) {
-      console.error('Error creating table:', error);
-      // If trigger creation fails, just continue without it
-      if (!error.message.includes('already exists')) {
-        throw error;
-      }
+      await client.query(query);
+      console.log('Users table created successfully');
     } finally {
       client.release();
     }
