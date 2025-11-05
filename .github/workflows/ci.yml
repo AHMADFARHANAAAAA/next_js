@@ -2,9 +2,9 @@ name: CI - Build and Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ Main, main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ Main, main, develop ]
 
 jobs:
   lint-and-typecheck:

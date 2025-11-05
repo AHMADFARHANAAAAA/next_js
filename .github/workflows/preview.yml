@@ -1,8 +1,8 @@
-name: Preview Deployment
+name: Preview - Deploy PR
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ Main, main ]
     types: [opened, synchronize, reopened]
 
 jobs:
