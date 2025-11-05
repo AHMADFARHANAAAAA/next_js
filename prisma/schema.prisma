@@ -80,10 +80,10 @@ model Lead {
   customerJourney String?
   notes           String?
   nextFollowUp    DateTime?
-  domicile        String?
   schoolId        String
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
+  domicile        String?
   school          School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
@@ -114,20 +114,20 @@ model Campaign {
 }
 
 model Content {
-  id               String        @id @default(cuid())
-  title            String
-  type             ContentType
-  content          String
-  status           ContentStatus @default(DRAFT)
-  publishDate      DateTime?
-  tags             String[]
-  socialMediaLink  String?
+  id                  String        @id @default(cuid())
+  title               String
+  type                ContentType
+  content             String
+  status              ContentStatus @default(DRAFT)
+  publishDate         DateTime?
+  tags                String[]
+  schoolId            String
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+  socialMediaLink     String?
   socialMediaPlatform String?
-  reach            Int?
-  schoolId         String
-  created_at       DateTime      @default(now())
-  updated_at       DateTime      @updatedAt
-  school           School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  reach               Int?
+  school              School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
