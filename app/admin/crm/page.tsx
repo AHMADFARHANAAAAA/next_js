@@ -1266,7 +1266,7 @@ function GradeGrowthChart({ data }: GradeGrowthChartProps) {
                 dataKey="PG"
                 position="top"
                 style={{ fontSize: '11px', fontWeight: '600', fill: '#475569' }}
-                formatter={(value: number) => (value > 0 ? value : '')}
+                formatter={(value) => (typeof value === 'number' && value > 0 ? value : '')}
               />
             </Bar>
             <Bar dataKey="TK" fill={gradeColors.TK} radius={[4, 4, 0, 0]}>
@@ -1280,7 +1280,7 @@ function GradeGrowthChart({ data }: GradeGrowthChartProps) {
                 dataKey="TK"
                 position="top"
                 style={{ fontSize: '11px', fontWeight: '600', fill: '#475569' }}
-                formatter={(value: number) => (value > 0 ? value : '')}
+                formatter={(value) => (typeof value === 'number' && value > 0 ? value : '')}
               />
             </Bar>
             <Bar dataKey="SD" fill={gradeColors.SD} radius={[4, 4, 0, 0]}>
@@ -1294,7 +1294,7 @@ function GradeGrowthChart({ data }: GradeGrowthChartProps) {
                 dataKey="SD"
                 position="top"
                 style={{ fontSize: '11px', fontWeight: '600', fill: '#475569' }}
-                formatter={(value: number) => (value > 0 ? value : '')}
+                formatter={(value) => (typeof value === 'number' && value > 0 ? value : '')}
               />
             </Bar>
             <Bar dataKey="SMP" fill={gradeColors.SMP} radius={[4, 4, 0, 0]}>
@@ -1308,7 +1308,7 @@ function GradeGrowthChart({ data }: GradeGrowthChartProps) {
                 dataKey="SMP"
                 position="top"
                 style={{ fontSize: '11px', fontWeight: '600', fill: '#475569' }}
-                formatter={(value: number) => (value > 0 ? value : '')}
+                formatter={(value) => (typeof value === 'number' && value > 0 ? value : '')}
               />
             </Bar>
             <Bar dataKey="SMA" fill={gradeColors.SMA} radius={[4, 4, 0, 0]}>
@@ -1322,7 +1322,7 @@ function GradeGrowthChart({ data }: GradeGrowthChartProps) {
                 dataKey="SMA"
                 position="top"
                 style={{ fontSize: '11px', fontWeight: '600', fill: '#475569' }}
-                formatter={(value: number) => (value > 0 ? value : '')}
+                formatter={(value) => (typeof value === 'number' && value > 0 ? value : '')}
               />
             </Bar>
           </BarChart>
