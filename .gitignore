@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE
+.idea/
+.vscode/
+
+# uploads (user-generated content)
+public/uploads/
+
+# test scripts
+test-*.js
+check-*.js
+add-*.js
+create-*.js
+dummy_*.csv
+clear-*.html
