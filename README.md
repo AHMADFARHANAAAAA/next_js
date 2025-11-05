@@ -4,7 +4,6 @@
 ![CD](https://github.com/AHMADFARHANAAAAA/next_js/workflows/CD%20-%20Deploy%20to%20Production/badge.svg)
 ![Code Quality](https://github.com/AHMADFARHANAAAAA/next_js/workflows/Code%20Quality/badge.svg)
 [![Deployment](https://img.shields.io/badge/deployment-active-success)](https://edu-crm.vercel.app)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A comprehensive CRM system built with Next.js 15, Prisma, and PostgreSQL for managing educational institution's lead generation, campaigns, and student enrollment.
 
