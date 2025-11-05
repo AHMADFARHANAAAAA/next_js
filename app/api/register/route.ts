@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// PrismaClient singleton imported from lib/prisma;
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    // For now, we'll allow registration (can be enhanced with session validation later)
+    
+    const { name, email, password, role = 'ADMIN' } = await request.json();
 
     // Validation
     if (!name || !email || !password) {
       return NextResponse.json(
-        { success: false, message: 'All fields are required' },
+        { success: false, message: 'Name, email, and password are required' },
         { status: 400 }
       );
     }
@@ -25,57 +25,85 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate role
+    const validRoles = ['ADMIN', 'USER', 'SUPERADMIN'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid role specified' },
+        { status: 400 }
+      );
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      include: { accounts: true }
     });
     
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, message: 'User already exists with this email' },
-        { status: 409 }
-      );
+      const providers = existingUser.accounts.map(acc => acc.provider);
+      const hasPassword = !!existingUser.password;
+      
+      if (providers.length > 0) {
+        // User registered via OAuth (Google)
+        return NextResponse.json({
+          success: false,
+          message: `This email is already registered via ${providers.join(', ')} with role: ${existingUser.role}`,
+          existingProviders: providers,
+          existingRole: existingUser.role,
+          type: 'oauth_exists'
+        }, { status: 409 });
+      } else if (hasPassword) {
+        // User registered manually
+        return NextResponse.json({
+          success: false,
+          message: `This email is already registered manually with role: ${existingUser.role}`,
+          existingRole: existingUser.role,
+          type: 'manual_exists'
+        }, { status: 409 });
+      } else {
+        // Edge case: user exists but no password or accounts
+        return NextResponse.json({
+          success: false,
+          message: 'This email is already registered. Please contact support.',
+          existingRole: existingUser.role,
+          type: 'unknown_exists'
+        }, { status: 409 });
+      }
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Create user with specified role
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        role: role as 'ADMIN' | 'USER' | 'SUPERADMIN', // Type-safe role assignment
+        emailVerified: new Date(), // Mark as verified since created by SUPERADMIN
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        created_at: true,
       }
     });
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    // Return success response (don't include password)
-    const userResponse = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      created_at: user.created_at
-    };
-
     return NextResponse.json({
       success: true,
-      message: 'User registered successfully',
-      user: userResponse,
-      token
+      message: `${role} user created successfully`,
+      user
     }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
 
     // Handle Prisma unique constraint error
-    if (error.code === 'P2002') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'Email already exists' },
         { status: 409 }

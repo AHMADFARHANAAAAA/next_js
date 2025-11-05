@@ -1,175 +1,139 @@
-import { pool } from '@/lib/database';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs'
+import type { User as PrismaUser } from '@prisma/client'
+import { ensurePrismaConnection } from '@/lib/prisma'
 
-export interface IUser {
-  id?: number;
-  name: string;
-  email: string;
-  password: string;
-  created_at?: Date;
-  updated_at?: Date;
-}
+const EMAIL_REGEX = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/
+
+export type IUser = PrismaUser
 
 export interface CreateUserData {
-  name: string;
-  email: string;
-  password: string;
+  name: string
+  email: string
+  password: string
 }
 
-export interface UserResponse {
-  id: number;
-  name: string;
-  email: string;
-  created_at: Date;
-  updated_at: Date;
-}
+export type UserResponse = Pick<PrismaUser, 'id' | 'name' | 'email' | 'created_at' | 'updated_at'>
 
 class User {
+  private static normalizeName(name: string) {
+    return name.trim()
+  }
+
+  private static normalizeEmail(email: string) {
+    return email.toLowerCase().trim()
+  }
+
   // Create a new user
   static async create(userData: CreateUserData): Promise<UserResponse> {
-    const { name, email, password } = userData;
+    const { name, email, password } = userData
 
-    // Validate input
-    if (!name || name.length < 2 || name.length > 50) {
-      throw new Error('Name must be between 2 and 50 characters');
+    if (!name || this.normalizeName(name).length < 2 || this.normalizeName(name).length > 50) {
+      throw new Error('Name must be between 2 and 50 characters')
     }
 
-    if (!email || !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
-      throw new Error('Please enter a valid email');
+    if (!email || !EMAIL_REGEX.test(email)) {
+      throw new Error('Please enter a valid email')
     }
 
     if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+      throw new Error('Password must be at least 6 characters')
     }
 
-    const query = `
-      INSERT INTO users (name, email, password)
-      VALUES ($1, $2, $3)
-      RETURNING id, name, email, created_at, updated_at
-    `;
+    const prisma = await ensurePrismaConnection()
 
-    const client = await pool.connect();
-    try {
-      const result = await client.query(query, [name.trim(), email.toLowerCase().trim(), password]);
-      return result.rows[0];
-    } finally {
-      client.release();
-    }
+    const user = await prisma.user.create({
+      data: {
+        name: this.normalizeName(name),
+        email: this.normalizeEmail(email),
+        password
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        created_at: true,
+        updated_at: true
+      }
+    })
+
+    return user
   }
 
   // Find user by email
   static async findByEmail(email: string): Promise<IUser | null> {
-    const query = `
-      SELECT id, name, email, password, created_at, updated_at
-      FROM users
-      WHERE email = $1
-    `;
-
-    const client = await pool.connect();
-    try {
-      const result = await client.query(query, [email.toLowerCase().trim()]);
-      return result.rows[0] || null;
-    } finally {
-      client.release();
+    if (!email) {
+      return null
     }
+
+    const prisma = await ensurePrismaConnection()
+
+    return prisma.user.findUnique({
+      where: { email: this.normalizeEmail(email) }
+    })
   }
 
   // Find user by ID
-  static async findById(id: number): Promise<UserResponse | null> {
-    const query = `
-      SELECT id, name, email, created_at, updated_at
-      FROM users
-      WHERE id = $1
-    `;
+  static async findById(id: string): Promise<UserResponse | null> {
+    const prisma = await ensurePrismaConnection()
 
-    const client = await pool.connect();
-    try {
-      const result = await client.query(query, [id]);
-      return result.rows[0] || null;
-    } finally {
-      client.release();
-    }
+    return prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        created_at: true,
+        updated_at: true
+      }
+    })
   }
 
   // Get all users (for admin)
   static async findAll(): Promise<UserResponse[]> {
-    const query = `
-      SELECT id, name, email, created_at, updated_at
-      FROM users
-      ORDER BY created_at DESC
-    `;
+    const prisma = await ensurePrismaConnection()
 
-    const client = await pool.connect();
-    try {
-      const result = await client.query(query);
-      return result.rows;
-    } finally {
-      client.release();
-    }
+    return prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        created_at: true,
+        updated_at: true
+      },
+      orderBy: { created_at: 'desc' }
+    })
   }
 
   // Check if email exists
   static async emailExists(email: string): Promise<boolean> {
-    const query = `
-      SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)
-    `;
-
-    const client = await pool.connect();
-    try {
-      const result = await client.query(query, [email.toLowerCase().trim()]);
-      return result.rows[0].exists;
-    } finally {
-      client.release();
+    if (!email) {
+      return false
     }
+
+    const prisma = await ensurePrismaConnection()
+
+    const count = await prisma.user.count({
+      where: { email: this.normalizeEmail(email) }
+    })
+
+    return count > 0
   }
 
   // Verify password
   static async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(plainPassword, hashedPassword);
+    return bcrypt.compare(plainPassword, hashedPassword)
   }
 
   // Hash password
   static async hashPassword(password: string): Promise<string> {
-    const saltRounds = 12;
-    return await bcrypt.hash(password, saltRounds);
+    const saltRounds = 12
+    return bcrypt.hash(password, saltRounds)
   }
 
-  // Create tables (for setup)
+  // Placeholder for legacy setup flow
   static async createTable(): Promise<void> {
-    const query = `
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL CHECK (length(name) >= 2 AND length(name) <= 50),
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL CHECK (length(password) >= 6),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
-      CREATE OR REPLACE FUNCTION update_updated_at_column()
-      RETURNS TRIGGER AS $$
-      BEGIN
-          NEW.updated_at = CURRENT_TIMESTAMP;
-          RETURN NEW;
-      END;
-      $$ language 'plpgsql';
-
-      CREATE TRIGGER update_users_updated_at 
-      BEFORE UPDATE ON users 
-      FOR EACH ROW 
-      EXECUTE FUNCTION update_updated_at_column();
-    `;
-
-    const client = await pool.connect();
-    try {
-      await client.query(query);
-      console.log('Users table created successfully');
-    } finally {
-      client.release();
-    }
+    console.warn('createTable is managed by Prisma migrations. No action taken.')
   }
 }
 
-export default User;
+export default User

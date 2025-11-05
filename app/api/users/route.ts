@@ -1,22 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse } from 'next/server';
+import { ensurePrismaConnection } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Get all users from Prisma
+    // Ensure database connection
+    const prisma = await ensurePrismaConnection()
+
+    // Get all users from Prisma with school information
     const users = await prisma.user.findMany({
       select: {
         id: true,
         name: true,
         email: true,
+        role: true,
+        schoolId: true,
         image: true,
         created_at: true,
         updated_at: true,
-        accounts: {
+        school: {
           select: {
-            provider: true,
+            id: true,
+            name: true
           }
         }
       },
@@ -31,15 +35,13 @@ export async function GET(request: NextRequest) {
       users: users
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get users error:', error);
 
     return NextResponse.json({
       success: false,
       message: 'Failed to fetch users',
-      error: error.message
+      error: error && typeof error === 'object' && 'message' in error ? error.message : 'Unknown error'
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

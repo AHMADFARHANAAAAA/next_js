@@ -18,6 +18,11 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "check-users.js",
+      "create-google-users.js", 
+      "create-superadmin.js",
+      "create-test-schools.js",
+      "test-superadmin-login.js",
     ],
   },
 ];

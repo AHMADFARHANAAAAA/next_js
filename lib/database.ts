@@ -1,53 +1,28 @@
-import { Pool } from 'pg';
-
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  throw new Error('Please define the DATABASE_URL environment variable inside .env.local');
-}
-
-// Log for debugging
-console.log('PostgreSQL URL:', DATABASE_URL.replace(/\/\/.*@/, '//***:***@')); // Hide credentials in logs
+import prisma from './prisma'
 
 /**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
+ * Ensures Prisma is connected before executing queries
+ * This prevents "Engine is not yet connected" errors
  */
-declare global {
-  var postgres: Pool | undefined;
-}
-
-let pool: Pool;
-
-if (process.env.NODE_ENV === 'production') {
-  pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  });
-} else {
-  if (!global.postgres) {
-    global.postgres = new Pool({
-      connectionString: DATABASE_URL,
-    });
-  }
-  pool = global.postgres;
-}
-
-async function dbConnect() {
+export async function ensureConnection() {
   try {
-    // Test the connection
-    const client = await pool.connect();
-    console.log('PostgreSQL connected successfully');
-    client.release();
-    return pool;
+    await prisma.$connect()
   } catch (error) {
-    console.error('PostgreSQL connection failed:', error);
-    throw error;
+    console.error('Database connection error:', error)
+    throw new Error('Failed to connect to database')
   }
 }
 
-export default dbConnect;
-export { pool };
+/**
+ * Execute a database query with automatic connection handling
+ */
+export async function withConnection<T>(
+  fn: () => Promise<T>
+): Promise<T> {
+  await ensureConnection()
+  return fn()
+}
+
+export { prisma }
+export default prisma
+

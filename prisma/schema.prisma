@@ -7,22 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth required models
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -35,20 +33,101 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Updated User model for NextAuth compatibility
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  password      String?   // Optional for social login
+  password      String?
+  role          UserRole  @default(USER)
+  schoolId      String?
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
-  
-  // NextAuth relations
   accounts      Account[]
   sessions      Session[]
+  school        School?   @relation(fields: [schoolId], references: [id])
+}
+
+model School {
+  id         String     @id @default(cuid())
+  name       String
+  address    String?
+  phone      String?
+  email      String?
+  logo       String?
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  campaigns  Campaign[]
+  contents   Content[]
+  leads      Lead[]
+  users      User[]
+}
+
+model Lead {
+  id              String    @id @default(cuid())
+  parentName      String
+  parentPhone     String?
+  parentEmail     String?
+  studentName     String?
+  schoolOrigin    String?
+  gradeTarget     String?
+  enrollmentYear  String?
+  infoSource      String?
+  dateContact     DateTime?
+  leadMonth       String?
+  status          String    @default("NEW")
+  customerJourney String?
+  notes           String?
+  nextFollowUp    DateTime?
+  domicile        String?
+  schoolId        String
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  school          School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([infoSource])
+  @@index([gradeTarget])
+}
+
+model Campaign {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?
+  type           CampaignType
+  status         CampaignStatus @default(DRAFT)
+  startDate      DateTime?
+  endDate        DateTime?
+  budget         Float?
+  targetAudience String?
+  schoolId       String
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+  reach          Int?
+  school         School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([type])
+}
+
+model Content {
+  id               String        @id @default(cuid())
+  title            String
+  type             ContentType
+  content          String
+  status           ContentStatus @default(DRAFT)
+  publishDate      DateTime?
+  tags             String[]
+  socialMediaLink  String?
+  socialMediaPlatform String?
+  reach            Int?
+  schoolId         String
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  school           School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -57,4 +136,41 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum CampaignType {
+  EMAIL
+  SOCIAL_MEDIA
+  PRINT
+  DIGITAL
+  EVENT
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum ContentType {
+  ARTICLE
+  IMAGE
+  VIDEO
+  SOCIAL_POST
+  NEWSLETTER
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
 }
