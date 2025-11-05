@@ -8,13 +8,13 @@ A comprehensive CRM system built with Next.js 15, Prisma, and PostgreSQL for man
 
 ## Features
 
-- 📊 **Dashboard Analytics** - Real-time PSB (student enrollment) metrics
-- 🎯 **Lead Management** - Track leads through awareness, consideration, and action stages
-- 📈 **Campaign Tracking** - Manage marketing campaigns with reach and budget monitoring
-- 📝 **Content Management** - Organize social media content across platforms
-- 🔐 **Role-based Access** - Admin and Superadmin user roles
-- 📱 **Responsive Design** - Works on desktop and mobile devices
-- 🤖 **AI Predictions** - Linear regression for enrollment projections
+-  **Dashboard Analytics** - Real-time PSB (student enrollment) metrics
+-  **Lead Management** - Track leads through awareness, consideration, and action stages
+-  **Campaign Tracking** - Manage marketing campaigns with reach and budget monitoring
+-  **Content Management** - Organize social media content across platforms
+-  **Role-based Access** - Admin and Superadmin user roles
+-  **Responsive Design** - Works on desktop and mobile devices
+-  **AI Predictions** - Linear regression for enrollment projections
 
 ## Tech Stack
 
