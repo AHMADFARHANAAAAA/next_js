@@ -14,7 +14,7 @@ A comprehensive CRM system built with Next.js 15, Prisma, and PostgreSQL for man
 -  **Content Management** - Organize social media content across platforms
 -  **Role-based Access** - Admin and Superadmin user roles
 -  **Responsive Design** - Works on desktop and mobile devices
--  *Predictions** - Linear regression for enrollment projections
+-  **Predictions** - Linear regression for enrollment projections
 
 ## Tech Stack
 
