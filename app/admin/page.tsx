@@ -69,7 +69,7 @@ export default function AdminPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold mb-2">Welcome back, {session.user.name}! 👋</h2>
-              <p className="text-indigo-100">Here's what's happening with your school today.</p>
+              <p className="text-indigo-100">Here&apos;s what&apos;s happening with your school today.</p>
             </div>
             <div className="hidden md:block">
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
