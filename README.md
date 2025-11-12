@@ -61,15 +61,52 @@ Edit `.env` with your configuration:
 DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
 NEXTAUTH_SECRET="your-secret-key"
 NEXTAUTH_URL="http://localhost:3000"
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ```
 
-4. Setup database:
+4. **Setup Vercel Blob Storage (for image uploads):**
+
+**Option A - Automatic (Recommended):**
+```bash
+# Windows PowerShell
+.\setup-blob.ps1
+
+# Linux/Mac
+chmod +x setup-blob.sh
+./setup-blob.sh
+```
+
+**Option B - Manual:**
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Link to Vercel project
+vercel link
+
+# Pull environment variables (includes BLOB_READ_WRITE_TOKEN)
+vercel env pull .env.local
+```
+
+**Option C - Vercel Dashboard:**
+1. Go to: https://vercel.com/ahmadfarhanaaaas-projects/edu-crm/stores
+2. Create Blob Storage
+3. Copy `BLOB_READ_WRITE_TOKEN` from Settings > Environment Variables
+4. Add to `.env.local`:
+   ```env
+   BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxx
+   ```
+
+> 📖 **See [VERCEL_BLOB_SETUP.md](./VERCEL_BLOB_SETUP.md) for detailed instructions**
+
+5. Setup database:
 ```bash
 npx prisma generate
 npx prisma migrate deploy
 ```
 
-5. Run the development server:
+6. Run the development server:
 
 ```bash
 npm run dev

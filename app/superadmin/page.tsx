@@ -3,6 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import Toast from '@/app/components/Toast'
 
 interface DashboardStats {
   schools: number
@@ -10,6 +11,13 @@ interface DashboardStats {
   leads: number
   campaigns: number
   contents: number
+}
+
+interface ToastState {
+  show: boolean
+  type: 'success' | 'error' | 'info' | 'warning'
+  message: string
+  description?: string
 }
 
 export default function SuperAdminDashboard() {
@@ -23,6 +31,20 @@ export default function SuperAdminDashboard() {
     contents: 0
   })
   const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState<ToastState>({
+    show: false,
+    type: 'success',
+    message: '',
+    description: ''
+  })
+
+  const showToast = (type: ToastState['type'], message: string, description?: string) => {
+    setToast({ show: true, type, message, description })
+  }
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, show: false }))
+  }
 
   const handleLogout = async () => {
     await signOut({ 
@@ -44,6 +66,11 @@ export default function SuperAdminDashboard() {
         fetch('/api/crm/contents?limit=1000')
       ])
 
+      // Check if all requests were successful
+      if (!schoolsRes.ok || !usersRes.ok || !leadsRes.ok || !campaignsRes.ok || !contentsRes.ok) {
+        throw new Error('Failed to fetch dashboard data')
+      }
+
       const [schoolsData, usersData, leadsData, campaignsData, contentsData] = await Promise.all([
         schoolsRes.json(),
         usersRes.json(),
@@ -60,8 +87,12 @@ export default function SuperAdminDashboard() {
         contents: contentsData.contents?.length || 0
       })
 
+      showToast('success', 'Dashboard Updated', 'Statistics refreshed successfully')
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      showToast('error', 'Update Failed', `Error: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
@@ -83,6 +114,7 @@ export default function SuperAdminDashboard() {
 
     // Fetch dashboard data
     fetchDashboardData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status, router])
 
   if (status === 'loading') {
@@ -99,6 +131,17 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      {/* Toast Notification */}
+      {toast.show && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          description={toast.description}
+          onClose={hideToast}
+          duration={5000}
+        />
+      )}
+
       {/* Header */}
       <header className="backdrop-blur-sm bg-white/90 border-b border-slate-200/60 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">

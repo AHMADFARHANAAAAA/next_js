@@ -12,9 +12,24 @@ export async function GET(
     const { id } = await params
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'SUPERADMIN') {
+    if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized. SUPERADMIN access required.' },
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // ADMIN can only view their own school, SUPERADMIN can view any school
+    if (session.user.role === 'ADMIN' && session.user.schoolId !== id) {
+      return NextResponse.json(
+        { error: 'Forbidden. You can only view your own school.' },
+        { status: 403 }
+      )
+    }
+
+    if (!['ADMIN', 'SUPERADMIN'].includes(session.user.role || '')) {
+      return NextResponse.json(
+        { error: 'Forbidden. Admin access required.' },
         { status: 403 }
       )
     }
@@ -48,10 +63,7 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      school
-    })
+    return NextResponse.json(school)
   } catch (error) {
     console.error('Error fetching school:', error)
     return NextResponse.json(
@@ -70,9 +82,24 @@ export async function PUT(
     const { id } = await params
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'SUPERADMIN') {
+    if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized. SUPERADMIN access required.' },
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // ADMIN can only update their own school, SUPERADMIN can update any school
+    if (session.user.role === 'ADMIN' && session.user.schoolId !== id) {
+      return NextResponse.json(
+        { error: 'Forbidden. You can only update your own school.' },
+        { status: 403 }
+      )
+    }
+
+    if (!['ADMIN', 'SUPERADMIN'].includes(session.user.role || '')) {
+      return NextResponse.json(
+        { error: 'Forbidden. Admin access required.' },
         { status: 403 }
       )
     }
@@ -108,36 +135,14 @@ export async function PUT(
         phone,
         email,
         logo
-      },
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true
-          }
-        },
-        _count: {
-          select: {
-            users: true,
-            leads: true,
-            campaigns: true,
-            contents: true
-          }
-        }
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      message: 'School updated successfully',
-      school
-    })
+    return NextResponse.json(school)
   } catch (error) {
     console.error('Error updating school:', error)
     return NextResponse.json(
-      { success: false, message: 'Failed to update school' },
+      { error: 'Failed to update school' },
       { status: 500 }
     )
   }

@@ -287,6 +287,7 @@ export default function CRMDashboard() {
     return `${basePath}${query ? `?${query}` : ''}`;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNavigate = (basePath: string) => {
     router.push(buildNavigationHref(basePath));
   };
@@ -820,6 +821,7 @@ interface StageCardProps {
   accentClass?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function StageCard({ label, value, helper, format, accentClass = 'bg-indigo-500' }: StageCardProps) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
