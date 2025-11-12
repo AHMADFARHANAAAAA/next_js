@@ -168,7 +168,7 @@ export default function AdminPage() {
             </svg>
             Quick Actions
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <button 
               onClick={() => router.push('/admin/crm/import')}
               className="group p-5 border-2 border-blue-100 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 text-left"
@@ -212,6 +212,22 @@ export default function AdminPage() {
                 <h3 className="ml-3 font-bold text-purple-900 text-lg">Create Content</h3>
               </div>
               <p className="text-sm text-gray-600">Publish content for social media</p>
+            </button>
+
+            <button 
+              onClick={() => router.push('/admin/settings')}
+              className="group p-5 border-2 border-orange-100 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all duration-200 text-left"
+            >
+              <div className="flex items-center mb-3">
+                <div className="bg-orange-500 p-2 rounded-lg">
+                  <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 className="ml-3 font-bold text-orange-900 text-lg">Settings</h3>
+              </div>
+              <p className="text-sm text-gray-600">Manage school logo and info</p>
             </button>
           </div>
         </div>

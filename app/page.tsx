@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface LoginFormData {
   email: string;
@@ -19,6 +20,33 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
+  const [schoolName, setSchoolName] = useState<string>('Education CRM');
+
+  // Fetch school logo if available (from query params or default)
+  useEffect(() => {
+    const fetchSchoolLogo = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const schoolId = params.get('school');
+      
+      if (schoolId) {
+        try {
+          const response = await fetch(`/api/schools/logo?schoolId=${schoolId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data.logo) {
+              setSchoolLogo(data.data.logo);
+              setSchoolName(data.data.schoolName);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching school logo:', error);
+        }
+      }
+    };
+
+    fetchSchoolLogo();
+  }, []);
 
   // Handle redirect when user is already logged in
   useEffect(() => {
@@ -147,12 +175,24 @@ export default function Home() {
         <div className="bg-white rounded-xl shadow-lg p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="mx-auto h-14 w-14 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
-              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+            <div className="mx-auto h-20 w-20 bg-blue-600 rounded-xl flex items-center justify-center mb-4 overflow-hidden">
+              {schoolLogo ? (
+                <div className="relative w-full h-full">
+                  <Image
+                    src={schoolLogo}
+                    alt={schoolName}
+                    fill
+                    className="object-contain p-2"
+                    unoptimized
+                  />
+                </div>
+              ) : (
+                <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Education CRM</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{schoolName}</h2>
             <p className="text-sm text-gray-600 mt-2">Silakan login untuk melanjutkan</p>
           </div>
 
