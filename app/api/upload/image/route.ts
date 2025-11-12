@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/authOptions'
-import { writeFile } from 'fs/promises'
-import { join } from 'path'
+import { put } from '@vercel/blob'
+
+// Configure for Edge Runtime (optimal for Vercel Blob)
+export const runtime = 'nodejs'
+export const maxDuration = 30 // 30 seconds timeout
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,38 +49,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
     // Generate unique filename
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
     const fileExtension = file.name.split('.').pop()
-    const fileName = `${uploadType}_${timestamp}_${randomString}.${fileExtension}`
+    const fileName = `${uploadType}/${uploadType}_${timestamp}_${randomString}.${fileExtension}`
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = join(process.cwd(), 'public', 'uploads', uploadType)
-    
-    try {
-      await writeFile(join(uploadDir, fileName), buffer)
-    } catch (error) {
-      // If directory doesn't exist, create it and try again
-      const fs = await import('fs')
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true })
-        await writeFile(join(uploadDir, fileName), buffer)
-      } else {
-        throw error
-      }
-    }
-
-    const fileUrl = `/uploads/${uploadType}/${fileName}`
+    // Upload to Vercel Blob
+    const blob = await put(fileName, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    })
 
     return NextResponse.json({
       success: true,
       message: 'Image uploaded successfully',
       data: {
-        url: fileUrl,
+        url: blob.url,
         filename: fileName,
         originalName: file.name,
         size: file.size,
